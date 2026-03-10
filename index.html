@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Calidad - Sistema Empresarial en Tiempo Real</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --dark: #1e293b;
+            --gray-50: #f8fafc;
+            --gray-100: #f8fafc;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
+
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 2000;
+        }
+
+        .login-container.hidden {
+            display: none;
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 16px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-header h1 {
+            font-size: 28px;
+            color: var(--dark);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .login-header i {
+            font-size: 32px;
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--gray-700);
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .app-container {
+            display: none;
+        }
+
+        .app-container.active {
+            display: block;
+        }
+
+        .main-layout {
+            display: flex;
+            min-height: 100vh;
+            background: var(--gray-50);
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .sidebar-header h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-user {
+            font-size: 13px;
+            opacity: 0.9;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 8px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .sidebar-menu a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .sidebar-menu a.active {
+            background: rgba(255,255,255,0.3);
+            font-weight: 600;
+        }
+
+        .sidebar-menu i {
+            font-size: 18px;
+            min-width: 24px;
+        }
+
+        .admin-only {
+            display: none;
+        }
+
+        .admin-only.visible {
+            display: block;
+        }
+
+        .logout-link {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            padding: 20px 30px;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .toolbar {
+            background: var(--gray-50);
+            padding: 20px 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .toolbar-left {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            flex: 1;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--gray-200);
+            color: var(--dark);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--gray-300);
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            padding: 0 30px 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        thead {
+            background: var(--gray-50);
+        }
+
+        th {
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--gray-700);
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        td {
+            padding: 16px 12px;
+            border-bottom: 1px solid var(--gray-100);
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .task-name {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 100px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .status-listo {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-listo:hover {
+            background: #bbf7d0;
+            transform: scale(1.05);
+        }
+
+        .status-pendiente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-pendiente:hover {
+            background: #fde68a;
+            transform: scale(1.05);
+        }
+
+        .status-incompleto {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-incompleto:hover {
+            background: #fecaca;
+            transform: scale(1.05);
+        }
+
+        .date {
+            color: var(--gray-600);
+            font-size: 13px;
+        }
+
+        .action-icons {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        tbody tr:hover .action-icons {
+            opacity: 1;
+        }
+
+        .icon-link {
+            color: var(--gray-400);
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .icon-link:hover {
+            color: var(--danger);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray-500);
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray-600);
+        }
+
+        .loading i {
+            font-size: 32px;
+            margin-bottom: 15px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .content-section {
+            padding: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-container" id="loginContainer">
+    <div class="login-box">
+        <div class="login-header">
+            <h1><i class="fas fa-tasks"></i>Control de Calidad</h1>
+        </div>
+        <form id="loginForm" onsubmit="login(event)">
+            <div class="form-group">
+                <label>Usuario</label>
+                <input type="text" id="username" placeholder="alexandra, carlos, maria..." required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="password" placeholder="Tu contraseña" required>
+            </div>
+            <button type="submit" class="login-btn">Ingresar</button>
+        </form>
+    </div>
+</div>
+
+<!-- APP -->
+<div class="app-container" id="appContainer">
+    <div class="main-layout">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-tasks"></i>Control</h2>
+                <div class="sidebar-user" id="userDisplay"></div>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a onclick="showSection('dashboard')" class="menu-link active">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Panel Principal</span>
+                </a></li>
+                <li><a onclick="showSection('tasks')" class="menu-link">
+                    <i class="fas fa-tasks"></i>
+                    <span>Todas las Tareas</span>
+                </a></li>
+                <li><a onclick="showSection('my-tasks')" class="menu-link">
+                    <i class="fas fa-list-check"></i>
+                    <span>Mis Tareas</span>
+                </a></li>
+                <li class="admin-only" id="adminMenu">
+                    <a onclick="showSection('admin-tasks')" class="menu-link">
+                        <i class="fas fa-pencil-alt"></i>
+                        <span>Crear Tareas</span>
+                    </a>
+                </li>
+                <li class="logout-link">
+                    <a onclick="logout()" class="menu-link">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Cerrar Sesión</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <div class="container">
+                <!-- DASHBOARD -->
+                <div id="dashboard" class="section active">
+                    <div class="header">
+                        <h1><i class="fas fa-chart-pie"></i>Panel Principal</h1>
+                    </div>
+                    <div class="content-section" id="dashboardContent">
+                        <div class="loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Cargando datos...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ALL TASKS -->
+                <div id="tasks" class="section">
+                    <div class="header">
+                        <h1><i class="fas fa-tasks"></i>Todas las Tareas</h1>
+                    </div>
+                    <div class="toolbar">
+                        <div class="toolbar-left">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchInput" placeholder="Buscar tareas..." onkeyup="filterTasks()">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="filter-btn active" onclick="filterByStatus('all', this)">Todas</button>
+                            <button class="filter-btn" onclick="filterByStatus('Listo', this)">✓ Completas</button>
+                            <button class="filter-btn" onclick="filterByStatus('Incompleto', this)">✗ Incompletas</button>
+                            <button class="filter-btn" onclick="filterByStatus('Pendiente', this)">Pendientes</button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tarea</th>
+                                    <th>Responsables</th>
+                                    <th>Estado</th>
+                                    <th>Vencimiento</th>
+                                    <th>Notas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allTasksBody">
+                                <tr><td colspan="5"><div class="loading"><i class="fas fa-spinner"></i></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- MY TASKS -->
+                <div id="my-tasks" class="section">
+                    <div class="header">
+                        <h1><i class="fas fa-list-check"></i>Mis Tareas</h1>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tarea</th>
+                                    <th>Estado</th>
+                                    <th>Vencimiento</th>
+                                    <th>Notas</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myTasksBody">
+                                <tr><td colspan="5"><div class="loading"><i class="fas fa-spinner"></i></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CREATE TASKS -->
+                <div id="admin-tasks" class="section">
+                    <div class="header">
+                        <h1><i class="fas fa-pencil-alt"></i>Crear Tarea</h1>
+                    </div>
+                    <div class="content-section">
+                        <form onsubmit="saveTask(event)" style="max-width: 600px;">
+                            <div class="form-group">
+                                <label>Nombre de la Tarea *</label>
+                                <input type="text" id="taskName" placeholder="Nombre" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Responsables (separados por coma) *</label>
+                                <input type="text" id="taskAssignees" placeholder="carlos, maria" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Estado</label>
+                                <select id="taskStatus">
+                                    <option value="Pendiente">Pendiente</option>
+                                    <option value="Listo">Completo</option>
+                                    <option value="Incompleto">Incompleto</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha de Vencimiento *</label>
+                                <input type="date" id="taskDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Notas</label>
+                                <textarea id="taskNotes" rows="3" placeholder="Notas..."></textarea>
+                            </div>
+                            <div style="display: flex; gap: 12px;">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Guardar
+                                </button>
+                                <button type="reset" class="btn btn-secondary">
+                                    <i class="fas fa-redo"></i> Limpiar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // SUPABASE CONFIG
+    const SUPABASE_URL = 'https://hypdlrpeziiakascnawk.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_FoVtkWCcjj994XTm1-1KeA_5ELkgCWy';
+
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentUser = null;
+    let currentRole = null;
+    let tasks = [];
+    let currentFilter = 'all';
+    let currentSearch = '';
+
+    // LOGIN
+    async function login(event) {
+        event.preventDefault();
+        const username = document.getElementById('username').value.trim().toLowerCase();
+        const password = document.getElementById('password').value.trim();
+
+        try {
+            const { data, error } = await db
+                .from('users')
+                .select('*')
+                .eq('username', username);
+
+            if (error) {
+                alert('❌ Error en la conexión');
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                alert('❌ Usuario no encontrado');
+                return;
+            }
+
+            const user = data[0];
+            
+            if (user.password !== password) {
+                alert('❌ Contraseña incorrecta');
+                return;
+            }
+
+            currentUser = user;
+            currentRole = user.role;
+
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('appContainer').classList.add('active');
+            
+            document.getElementById('userDisplay').innerHTML = `<strong>${username.toUpperCase()}</strong><br>${currentRole === 'admin' ? '👑 Admin' : '👤 Trabajador'}`;
+
+            if (currentRole === 'admin') {
+                document.getElementById('adminMenu').classList.add('visible');
+            } else {
+                document.getElementById('adminMenu').classList.remove('visible');
+            }
+
+            loadTasks();
+            setupRealtime();
+        } catch (err) {
+            alert('❌ Error: ' + err.message);
+        }
+    }
+
+    function logout() {
+        if (confirm('¿Cerrar sesión?')) {
+            location.reload();
+        }
+    }
+
+    async function loadTasks() {
+        try {
+            const { data } = await db.from('tasks').select('*');
+            tasks = data || [];
+            renderDashboard();
+            renderAllTasks();
+            renderMyTasks();
+        } catch (err) {
+            console.error('Error:', err);
+        }
+    }
+
+    function setupRealtime() {
+        db.from('tasks')
+            .on('*', () => {
+                loadTasks();
+            })
+            .subscribe();
+    }
+
+    function renderDashboard() {
+        const html = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow-md);">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Completas</div>
+                    <div style="font-size: 32px; font-weight: 700;">${tasks.filter(t => t.status === 'Listo').length}</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow-md);">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Pendientes</div>
+                    <div style="font-size: 32px; font-weight: 700;">${tasks.filter(t => t.status === 'Pendiente').length}</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow-md);">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Incompletas</div>
+                    <div style="font-size: 32px; font-weight: 700;">${tasks.filter(t => t.status === 'Incompleto').length}</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow-md);">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Total</div>
+                    <div style="font-size: 32px; font-weight: 700;">${tasks.length}</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('dashboardContent').innerHTML = html;
+    }
+
+    function renderAllTasks() {
+        let filtered = tasks.filter(t => {
+            const matchFilter = currentFilter === 'all' || t.status === currentFilter;
+            const matchSearch = t.name.toLowerCase().includes(currentSearch.toLowerCase());
+            return matchFilter && matchSearch;
+        });
+
+        if (filtered.length === 0) {
+            document.getElementById('allTasksBody').innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-inbox"></i><p>Sin tareas</p></div></td></tr>';
+            return;
+        }
+
+        let html = filtered.map(task => `
+            <tr>
+                <td><span class="task-name">${task.name}</span></td>
+                <td>${task.assignees}</td>
+                <td><span class="status-badge status-${task.status.toLowerCase()}" onclick="changeStatus(${task.id})">${task.status}</span></td>
+                <td><span class="date">${new Date(task.dueDate).toLocaleDateString('es-ES')}</span></td>
+                <td>${task.notes || '-'}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('allTasksBody').innerHTML = html;
+    }
+
+    function renderMyTasks() {
+        let myTasks = tasks.filter(t => t.assignees.toLowerCase().includes(currentUser.username));
+
+        if (myTasks.length === 0) {
+            document.getElementById('myTasksBody').innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-inbox"></i><p>Sin tareas asignadas</p></div></td></tr>';
+            return;
+        }
+
+        let html = myTasks.map(task => `
+            <tr>
+                <td><span class="task-name">${task.name}</span></td>
+                <td><span class="status-badge status-${task.status.toLowerCase()}" onclick="changeStatus(${task.id})">${task.status}</span></td>
+                <td><span class="date">${new Date(task.dueDate).toLocaleDateString('es-ES')}</span></td>
+                <td>${task.notes || '-'}</td>
+                <td><div class="action-icons"><i class="icon-link fas fa-trash" onclick="deleteTask(${task.id})"></i></div></td>
+            </tr>
+        `).join('');
+
+        document.getElementById('myTasksBody').innerHTML = html;
+    }
+
+    async function changeStatus(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        const statuses = ['Pendiente', 'Listo', 'Incompleto'];
+        const idx = statuses.indexOf(task.status);
+        const newStatus = statuses[(idx + 1) % statuses.length];
+
+        try {
+            await db.from('tasks').update({ status: newStatus }).eq('id', taskId);
+        } catch (err) {
+            alert('❌ Error: ' + err.message);
+        }
+    }
+
+    async function deleteTask(taskId) {
+        if (confirm('¿Eliminar tarea?')) {
+            try {
+                await db.from('tasks').delete().eq('id', taskId);
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+    }
+
+    async function saveTask(event) {
+        event.preventDefault();
+
+        if (currentRole !== 'admin') {
+            alert('❌ Solo admin puede crear tareas');
+            return;
+        }
+
+        const name = document.getElementById('taskName').value;
+        const assignees = document.getElementById('taskAssignees').value;
+        const status = document.getElementById('taskStatus').value;
+        const dueDate = document.getElementById('taskDate').value;
+        const notes = document.getElementById('taskNotes').value;
+
+        try {
+            await db.from('tasks').insert([{
+                name,
+                assignees: assignees.toLowerCase(),
+                status,
+                dueDate,
+                notes
+            }]);
+
+            event.target.reset();
+            alert('✅ Tarea creada');
+        } catch (err) {
+            alert('❌ Error: ' + err.message);
+        }
+    }
+
+    function filterTasks() {
+        currentSearch = document.getElementById('searchInput').value;
+        renderAllTasks();
+    }
+
+    function filterByStatus(status, btn) {
+        currentFilter = status;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderAllTasks();
+    }
+
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        
+        document.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
+        event.target.closest('.menu-link').classList.add('active');
+    }
+</script>
+
+</body>
+</html>
